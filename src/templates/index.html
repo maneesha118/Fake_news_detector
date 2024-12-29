@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fake News Detector</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-4xl font-bold text-center mb-8">Fake News Detector</h1>
+        
+        <div class="max-w-2xl mx-auto bg-white rounded-lg shadow-md p-6">
+            <div class="mb-4">
+                <label for="url" class="block text-gray-700 font-semibold mb-2">News Article URL</label>
+                <input type="url" id="url" 
+                       class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                       placeholder="https://example.com/news-article">
+            </div>
+            
+            <button onclick="analyzeArticle()" 
+                    class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition-colors">
+                Analyze Article
+            </button>
+
+            <div id="loading" class="hidden mt-4 text-center">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                <p class="mt-2 text-gray-600">Analyzing article...</p>
+            </div>
+
+            <div id="results" class="hidden mt-6 p-4 border rounded-lg">
+                <div class="mb-4">
+                    <span class="font-semibold">Classification: </span>
+                    <span id="classification" class="text-lg font-bold"></span>
+                </div>
+                <div class="mb-4">
+                    <span class="font-semibold">Confidence Score: </span>
+                    <span id="confidence" class="text-lg"></span>
+                </div>
+                <div>
+                    <span class="font-semibold">Reasoning: </span>
+                    <p id="reasoning" class="mt-2 text-gray-700"></p>
+                </div>
+            </div>
+
+            <div id="error" class="hidden mt-4 p-4 bg-red-100 text-red-700 rounded-lg">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function analyzeArticle() {
+            const url = document.getElementById('url').value;
+            if (!url) {
+                showError('Please enter a URL');
+                return;
+            }
+
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('results').classList.add('hidden');
+            document.getElementById('error').classList.add('hidden');
+
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to analyze article');
+                }
+
+                document.getElementById('classification').textContent = data.classification;
+                document.getElementById('classification').className = 
+                    `text-lg font-bold ${data.classification === 'REAL' ? 'text-green-600' : 'text-red-600'}`;
+                document.getElementById('confidence').textContent = 
+                    `${(data.confidence_score * 100).toFixed(1)}%`;
+                document.getElementById('reasoning').textContent = data.reasoning;
+
+                document.getElementById('results').classList.remove('hidden');
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                document.getElementById('loading').classList.add('hidden');
+            }
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
